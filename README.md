@@ -57,4 +57,4 @@ GNU General Public License v3.0. См. [LICENSE](LICENSE).
 ---
 **Автор:** Shabure  
 **Поддержка:** [Issues](https://github.com/yourname/autobalance-vip/issues)
-```
+
