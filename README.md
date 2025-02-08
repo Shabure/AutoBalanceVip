@@ -1,7 +1,7 @@
 ```markdown
 # Auto Balance VIP for CS:GO
 
-[![Version](https://img.shields.io/badge/Version-1.3-blue)](https://github.com/yourname/autobalance-vip)
+[![Version](https://img.shields.io/badge/Version-1.3-blue)](https://github.com/Shabure/autobalance-vip)
 [![License](https://img.shields.io/badge/License-GPLv3-green)](LICENSE)
 
 Плагин для автоматической балансировки VIP-игроков на CS:GO серверах. Решает проблему дисбаланса между командами по количеству VIP-игроков, сохраняя общий баланс сервера.
