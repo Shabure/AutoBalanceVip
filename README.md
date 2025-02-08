@@ -22,9 +22,9 @@
    - [CS:GO Colored Chat](https://forums.alliedmods.net/showthread.php?t=267743)
 
 2. Скопируйте в папку сервера:
-   ```
+  
    addons/sourcemod/plugins/AutoBalanceVIP.smx
-   ```
+ 
 
 
 ```
