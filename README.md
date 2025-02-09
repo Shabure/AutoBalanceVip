@@ -1,4 +1,3 @@
-```markdown
 # Auto Balance VIP for CS:GO
 
 [![Version](https://img.shields.io/badge/Version-1.3-blue)](https://github.com/Shabure/autobalancevip)
@@ -25,9 +24,6 @@
   
    addons/sourcemod/plugins/AutoBalanceVIP.smx
  
-
-
-```
 
 ## 🎮 Использование
 ### Основная логика
