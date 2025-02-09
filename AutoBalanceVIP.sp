@@ -3,7 +3,7 @@
 #include <vip_core>    // Подключаем инклуд VIP плагина
 
 // Указываем VIP-группы для балансировки
-char gsVIPGroups[][] = { "spons", "deluxe", "premium", "vip" };
+char gsVIPGroups[][] = { "spons" };
 
 bool g_bMSG;
 
@@ -38,46 +38,56 @@ public void Event_RoundPreStart(Event hEvent, const char[] sName, bool bDontBroa
 
 void CheckAndBalanceTeams()
 {
-    int vipT, vipCT, totalT, totalCT;
-    CountVIPPlayers(vipT, vipCT, totalT, totalCT);
+    int  vipT, vipCT, totalT, totalCT;
+    bool bBalancePerformed;
 
-    int imbalance    = vipT - vipCT;
-    int absImbalance = AbsoluteValue(imbalance);
-
-    if (absImbalance >= 2)
+    do
     {
-        int fromTeam         = (imbalance > 0) ? CS_TEAM_T : CS_TEAM_CT;
-        int toTeam           = (fromTeam == CS_TEAM_T) ? CS_TEAM_CT : CS_TEAM_T;
+        CountVIPPlayers(vipT, vipCT, totalT, totalCT);
+        int imbalance     = vipT - vipCT;
+        int absImbalance  = AbsoluteValue(imbalance);
 
-        // Ищем только мертвых игроков
-        int vipCandidate     = FindTopScoringVIP(fromTeam);
-        int regularCandidate = FindBottomRegularPlayer(toTeam);
+        bBalancePerformed = false;
 
-        if (vipCandidate != -1 && regularCandidate != -1)
+        if (absImbalance >= 2)
         {
-            // Меняем команды с сохранением общего баланса
-            CS_SwitchTeam(vipCandidate, toTeam);
-            CS_SwitchTeam(regularCandidate, fromTeam);
+            int fromTeam         = (imbalance > 0) ? CS_TEAM_T : CS_TEAM_CT;
+            int toTeam           = (fromTeam == CS_TEAM_T) ? CS_TEAM_CT : CS_TEAM_T;
 
-            // Обновляем счетчики после перемещения
-            CountVIPPlayers(vipT, vipCT, totalT, totalCT);
+            int vipCandidate     = FindTopScoringVIP(fromTeam);
+            int regularCandidate = FindBottomRegularPlayer(toTeam);
 
-            if (g_bMSG)
+            if (vipCandidate != -1 && regularCandidate != -1)
             {
-                CGOPrintToChatAll("Произведен VIP баланс: \x04%dT \x01- \x0B%dCT", vipT, vipCT);
-                PrintToServer("Произведен VIP баланс: %dT - %dCT", vipT, vipCT);
-                // Для VIP-игрока
-                CGOPrintToChat(vipCandidate,
-                               " \x08[VIP Balance]\x01 \x04•\x01 Вы \x0Bперемещены\x01 как \x08VIP\x01 игрок с \x04высоким\x01 рейтингом \x0E(Счет: %d)",
-                               CS_GetClientContributionScore(vipCandidate));
+                // Проверяем актуальность статуса игроков перед перемещением
+                if (ValidClient(vipCandidate) && ValidClient(regularCandidate) && GetClientTeam(vipCandidate) == fromTeam && GetClientTeam(regularCandidate) == toTeam)
+                {
+                    CS_SwitchTeam(vipCandidate, toTeam);
+                    CS_SwitchTeam(regularCandidate, fromTeam);
 
-                // Для обычного игрока
-                CGOPrintToChat(regularCandidate,
-                               " \x08[VIP Balance]\x01 \x04•\x01 Вы \x0Bперемещены\x01 как \x08обычный\x01 игрок с \x02низким\x01 рейтингом \x0E(Счет: %d)",
-                               CS_GetClientContributionScore(regularCandidate));
+                    // Форсируем обновление счетчиков
+                    CountVIPPlayers(vipT, vipCT, totalT, totalCT);
+
+                    if (g_bMSG)
+                    {
+                        CGOPrintToChatAll("\x02Произведен \x09VIP\x02 баланс: \x04%dT \x02- \x0B%dCT", vipT, vipCT);
+                        PrintToServer("\nПроизведен VIP баланс: %dT - %dCT\n", vipT, vipCT);
+                        // Для VIP-игрока
+                        CGOPrintToChat(vipCandidate,
+                                       " \x08[VIP Balance]\x01 \x04•\x01 Вы \x0Bперемещены\x01 как \x08VIP\x01 игрок с \x04высоким\x01 рейтингом \x0E(Счет: %d)",
+                                       CS_GetClientContributionScore(vipCandidate));
+
+                        // Для обычного игрока
+                        CGOPrintToChat(regularCandidate,
+                                       " \x08[VIP Balance]\x01 \x04•\x01 Вы \x0Bперемещены\x01 как \x08обычный\x01 игрок с \x02низким\x01 рейтингом \x0E(Счет: %d)",
+                                       CS_GetClientContributionScore(regularCandidate));
+                    }
+                    bBalancePerformed = true;
+                }
             }
         }
     }
+    while (bBalancePerformed && AbsoluteValue(vipT - vipCT) >= 2);
 }
 
 bool IsClientInVIPGroup(int client)
@@ -96,21 +106,20 @@ bool IsClientInVIPGroup(int client)
 void CountVIPPlayers(int &vipT, int &vipCT, int &totalT, int &totalCT)
 {
     vipT = vipCT = totalT = totalCT = 0;
-    for (int i = 1; i <= MaxClients; i++)
+    for(int i = 1; i <= MaxClients; i++)
     {
-        if (ValidClient(i))
+        if(!ValidClient(i)) continue; // Пропускаем невалидных клиентов
+        
+        int team = GetClientTeam(i);
+        if(team != CS_TEAM_T && team != CS_TEAM_CT) continue; // Игнорируем зрителей
+        
+        // Считаем общее количество игроков
+        (team == CS_TEAM_T) ? totalT++ : totalCT++;
+        
+        // Проверяем принадлежность к VIP-группам из списка
+        if(IsClientInVIPGroup(i)) 
         {
-            int team = GetClientTeam(i);
-            if (team == CS_TEAM_T)
-            {
-                totalT++;
-                if (IsClientInVIPGroup(i)) vipT++;
-            }
-            else if (team == CS_TEAM_CT)
-            {
-                totalCT++;
-                if (IsClientInVIPGroup(i)) vipCT++;
-            }
+            (team == CS_TEAM_T) ? vipT++ : vipCT++;
         }
     }
 }
@@ -143,10 +152,10 @@ int FindBottomRegularPlayer(int team)
 
     for (int i = 1; i <= MaxClients; i++)
     {
-        if (ValidClient(i) && GetClientTeam(i) == team && !IsClientInVIPGroup(i))
+        if (ValidClient(i) && GetClientTeam(i) == team && !IsClientInVIPGroup(i) && !IsFakeClient(i))
         {
             int score = CS_GetClientContributionScore(i);
-            if (score < minScore)
+            if (score < minScore || (score == minScore && GetClientUserId(i) < GetClientUserId(candidate)))
             {
                 minScore  = score;
                 candidate = i;
