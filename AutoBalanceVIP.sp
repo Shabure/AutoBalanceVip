@@ -64,7 +64,8 @@ void CheckAndBalanceTeams()
 
             if (g_bMSG)
             {
-                // CGOPrintToChatAll("VIP баланс: \x04%dT \x01- \x0B%dCT", vipT, vipCT);
+                CGOPrintToChatAll("Произведен VIP баланс: \x04%dT \x01- \x0B%dCT", vipT, vipCT);
+                PrintToServer("Произведен VIP баланс: %dT - %dCT", vipT, vipCT);
                 // Для VIP-игрока
                 CGOPrintToChat(vipCandidate,
                                " \x08[VIP Balance]\x01 \x04•\x01 Вы \x0Bперемещены\x01 как \x08VIP\x01 игрок с \x04высоким\x01 рейтингом \x0E(Счет: %d)",
